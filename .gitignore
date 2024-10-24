@@ -1,0 +1,7 @@
+dataset/
+db/
+dlib/
+venv/
+__pycache__/
+.idea/
+data.pickle

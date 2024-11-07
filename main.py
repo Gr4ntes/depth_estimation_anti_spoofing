@@ -93,7 +93,8 @@ class App(QtWidgets.QWidget):
 
         self.login_button = QtWidgets.QPushButton("Login")
         self.register_button = QtWidgets.QPushButton("Register")
-        self.settings_button = QtWidgets.QPushButton("Settings")
+        self.images_checkbox = QtWidgets.QCheckBox()
+        self.images_checkbox.setChecked(True)
         self.label = QtWidgets.QLabel(self)
         self.th = CamThread()
 
@@ -125,8 +126,11 @@ class App(QtWidgets.QWidget):
         header_text.setFont(font)
         row_layout.addWidget(header_text)
         row_layout.addStretch()
-        self.settings_button.setIconSize(QtCore.QSize(100, 50))
-        row_layout.addWidget(self.settings_button)
+        checkbox_text = QtWidgets.QLabel("Save images", self)
+        checkbox_font = QtGui.QFont("Helvetica", 12)
+        checkbox_text.setFont(checkbox_font)
+        row_layout.addWidget(checkbox_text)
+        row_layout.addWidget(self.images_checkbox)
         layout.addLayout(row_layout)
         layout.addWidget(self.label)
         layout.addWidget(self.login_button)
@@ -139,16 +143,17 @@ class App(QtWidgets.QWidget):
         cv2.imwrite(os.path.join(self.db_dir, '{}.jpg'.format(datetime.now())), self.th.runnable.recent_frame)
 
     def login(self):
-        temp_img_path = './.tmp.jpg'
+        original_img_path = './original_img.png'
+        depth_filename = "depth_img.png"
 
-        cv2.imwrite(temp_img_path, self.th.runnable.recent_frame)
+        cv2.imwrite(original_img_path, self.th.runnable.recent_frame)
 
-        result = identify_face(self.db_dir, temp_img_path)
+        result = identify_face(self.db_dir, original_img_path)
         if not result:
             create_MessageBox('error', 'Error',
                               'Either a user is not registered or no faces detected. \nPlease try again later.')
         else:
-            img = cv2.imread(temp_img_path)
+            img = cv2.imread(original_img_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             input_batch = transform(img).to(device)
             with torch.no_grad():
@@ -161,17 +166,16 @@ class App(QtWidgets.QWidget):
                 ).squeeze()
 
             output = prediction.cpu().numpy()
-            output_filename = "depth_img.png"
 
             fig = plt.figure()
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
             ax.imshow(output)
-            plt.savefig(output_filename, bbox_inches='tight', pad_inches=0)
+            plt.savefig(depth_filename, bbox_inches='tight', pad_inches=0)
             plt.close(fig)
 
-            img = cv2.imread(output_filename)
+            img = cv2.imread(depth_filename)
             img = cv2.resize(img, (320, 180))
             img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -182,6 +186,14 @@ class App(QtWidgets.QWidget):
                 orientations=9,
                 visualize=True,
                 block_norm='L2-Hys')
+            if self.images_checkbox.isChecked():
+                fig = plt.figure()
+                ax = plt.Axes(fig, [0., 0., 1., 1.])
+                ax.set_axis_off()
+                fig.add_axes(ax)
+                ax.imshow(hog_data_img)
+                plt.savefig("hog_img.png", bbox_inches='tight', pad_inches=0)
+                plt.close(fig)
             input_img = [np.asarray(img_hog)]
             prediction = model.predict(input_img)
             predicted_result = prediction[0]
@@ -190,7 +202,9 @@ class App(QtWidgets.QWidget):
                 create_MessageBox('info', 'Success!', "Login attempt was successful, Welcome back!")
             else:
                 create_MessageBox('error', 'Error', "It looks like you are fake!")
-        os.remove(temp_img_path)
+        if not self.images_checkbox.isChecked():
+            os.remove(original_img_path)
+            os.remove(depth_filename)
 
     def cleanup(self):
         self.th.cleanup()

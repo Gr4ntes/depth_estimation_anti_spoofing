@@ -10,11 +10,12 @@ import face_recognition
 import numpy as np
 from skimage.feature import hog
 from PySide6 import QtCore, QtWidgets, QtGui
+import time
 
-model_dict = pickle.load(open('./model.p', 'rb'))
+model_dict = pickle.load(open('depth_classifier/model.p', 'rb'))
 model = model_dict['model']
 
-model_type = "DPT_Large"
+model_type = "MiDaS_small"
 midas = torch.hub.load("intel-isl/MiDaS", model_type)
 midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms")
 
@@ -148,11 +149,13 @@ class App(QtWidgets.QWidget):
 
         cv2.imwrite(original_img_path, self.th.runnable.recent_frame)
 
+        start_time = time.perf_counter()
         result = identify_face(self.db_dir, original_img_path)
         if not result:
             create_MessageBox('error', 'Error',
                               'Either a user is not registered or no faces detected. \nPlease try again later.')
         else:
+            start_spoofing_time = time.perf_counter()
             img = cv2.imread(original_img_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             input_batch = transform(img).to(device)
@@ -197,7 +200,11 @@ class App(QtWidgets.QWidget):
             input_img = [np.asarray(img_hog)]
             prediction = model.predict(input_img)
             predicted_result = prediction[0]
-
+            end_time = time.perf_counter()
+            spoofing_elapsed = end_time - start_spoofing_time
+            print(f"Anti-Spoofing time: {spoofing_elapsed:.4f} seconds")
+            elapsed = end_time - start_time
+            print(f"Total time: {elapsed:.4f} seconds")
             if predicted_result == "valid":
                 create_MessageBox('info', 'Success!', "Login attempt was successful, Welcome back!")
             else:

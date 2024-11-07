@@ -4,7 +4,7 @@ import pickle
 from skimage.feature import hog
 import cv2
 
-DATA_DIR = './dataset/train'
+DATA_DIR = '../dataset/train'
 
 data = []
 labels = []

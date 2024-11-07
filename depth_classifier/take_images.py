@@ -18,7 +18,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 midas.to(device)
 midas.eval()
 
-output_dir = "dataset/train/fake"
+output_dir = "../dataset/train/fake"
 # Specify the valid directory
 os.makedirs(output_dir, exist_ok=True)
 

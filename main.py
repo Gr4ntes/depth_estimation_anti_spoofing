@@ -11,8 +11,9 @@ import numpy as np
 from skimage.feature import hog
 from PySide6 import QtCore, QtWidgets, QtGui
 import time
+import utils
 
-model_dict = pickle.load(open('depth_classifier/model.p', 'rb'))
+model_dict = pickle.load(open('model.p', 'rb'))
 model = model_dict['model']
 
 model_type = "MiDaS_small"
@@ -36,21 +37,6 @@ def create_MessageBox(type, title, text):
     if type == 'error':
         message_box.setIcon(QtWidgets.QMessageBox.Critical)
     message_box.exec()
-
-def identify_face(dir, img_path):
-    files = os.listdir(dir)
-    unknown_image = face_recognition.load_image_file(img_path)
-    if len(face_recognition.face_encodings(unknown_image)) > 0:
-        unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
-    else:
-        return False
-    for file in files:
-        known_image = face_recognition.load_image_file(os.path.join(dir, file))
-        known_encoding = face_recognition.face_encodings(known_image)[0]
-        results = face_recognition.compare_faces([known_encoding], unknown_encoding)
-        if results[0] == np.True_:
-            return True
-    return False
 
 class CamRunnable(QtCore.QRunnable):
     def __init__(self, changePixmap):
@@ -145,61 +131,19 @@ class App(QtWidgets.QWidget):
 
     def login(self):
         original_img_path = './original_img.png'
-        depth_filename = "depth_img.png"
+        depth_img_path = "./depth_img.png"
+        hog_img_path = "./hog_img.png"
 
         cv2.imwrite(original_img_path, self.th.runnable.recent_frame)
 
         start_time = time.perf_counter()
-        result = identify_face(self.db_dir, original_img_path)
+        result = utils.identify_face(self.db_dir, original_img_path)
         if not result:
             create_MessageBox('error', 'Error',
                               'Either a user is not registered or no faces detected. \nPlease try again later.')
         else:
             start_spoofing_time = time.perf_counter()
-            img = cv2.imread(original_img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            input_batch = transform(img).to(device)
-            with torch.no_grad():
-                prediction = midas(input_batch)
-                prediction = torch.nn.functional.interpolate(
-                    prediction.unsqueeze(1),
-                    size=img.shape[:2],
-                    mode="bicubic",
-                    align_corners=False,
-                ).squeeze()
-
-            output = prediction.cpu().numpy()
-
-            fig = plt.figure()
-            ax = plt.Axes(fig, [0., 0., 1., 1.])
-            ax.set_axis_off()
-            fig.add_axes(ax)
-            ax.imshow(output)
-            plt.savefig(depth_filename, bbox_inches='tight', pad_inches=0)
-            plt.close(fig)
-
-            img = cv2.imread(depth_filename)
-            img = cv2.resize(img, (320, 180))
-            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            # classify the image
-            img_hog, hog_data_img = hog(
-                img_gray, pixels_per_cell=(8, 8),
-                cells_per_block=(2, 2),
-                orientations=9,
-                visualize=True,
-                block_norm='L2-Hys')
-            if self.images_checkbox.isChecked():
-                fig = plt.figure()
-                ax = plt.Axes(fig, [0., 0., 1., 1.])
-                ax.set_axis_off()
-                fig.add_axes(ax)
-                ax.imshow(hog_data_img)
-                plt.savefig("hog_img.png", bbox_inches='tight', pad_inches=0)
-                plt.close(fig)
-            input_img = [np.asarray(img_hog)]
-            prediction = model.predict(input_img)
-            predicted_result = prediction[0]
+            predicted_result = utils.validate(original_img_path, depth_img_path, hog_img_path, self.images_checkbox.isChecked())
             end_time = time.perf_counter()
             spoofing_elapsed = end_time - start_spoofing_time
             print(f"Anti-Spoofing time: {spoofing_elapsed:.4f} seconds")
@@ -211,7 +155,6 @@ class App(QtWidgets.QWidget):
                 create_MessageBox('error', 'Error', "It looks like you are fake!")
         if not self.images_checkbox.isChecked():
             os.remove(original_img_path)
-            os.remove(depth_filename)
 
     def cleanup(self):
         self.th.cleanup()

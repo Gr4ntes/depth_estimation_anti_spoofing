@@ -5,3 +5,7 @@ venv/
 __pycache__/
 .idea/
 data.pickle
+test/test_images/
+depth_img.png
+hog_img.png
+original_img.png

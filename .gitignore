@@ -9,3 +9,6 @@ test/test_images/
 depth_img.png
 hog_img.png
 original_img.png
+/lbp_classifier/model_lbp.p
+/depth_classifier/data_depth.pickle
+/original_dataset/

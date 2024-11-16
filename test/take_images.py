@@ -3,16 +3,17 @@ import cv2
 import time
 import torch
 
-output_dir = "./test_images/fake"
+output_dir = "/Users/gr4ntes/PycharmProjects/depth_estimation_anti_spoofing/dataset_real/real"
 # Specify the valid directory
 os.makedirs(output_dir, exist_ok=True)
 
 # Start video capture from the webcam
 cap = cv2.VideoCapture(0)
+time.sleep(1)
 
 timestamp = 0
 
-while timestamp < 20:
+while timestamp < 200:
     ret, frame = cap.read()
     if not ret:
         continue

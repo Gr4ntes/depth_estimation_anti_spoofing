@@ -17,13 +17,15 @@ hog_img_path = "./hog_img.png"
 mistakes_count = 0
 times = []
 for dir_ in os.listdir(DATA_DIR):
-    for img_path in os.listdir(os.path.join(DATA_DIR, dir_)):
-        start_time = time.perf_counter()
-        result = utils.validate(os.path.abspath(os.path.join(DATA_DIR, dir_, img_path)), depth_img_path, hog_img_path, False)
-        if result != dir_:
-            mistakes_count += 1
-        end_time = time.perf_counter()
-        times.append(end_time - start_time)
+    if not os.path.isfile(os.path.join(DATA_DIR, dir_)):
+        for img_path in os.listdir(os.path.join(DATA_DIR, dir_)):
+            start_time = time.perf_counter()
+            result = utils.validate(os.path.abspath(os.path.join(DATA_DIR, dir_, img_path)), depth_img_path, hog_img_path, False)
+            if result != dir_:
+                print(os.path.join(DATA_DIR, dir_, img_path))
+                mistakes_count += 1
+            end_time = time.perf_counter()
+            times.append(end_time - start_time)
 
 print("Mistakes: {}".format(mistakes_count))
 print(len(times))

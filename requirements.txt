@@ -7,7 +7,6 @@ PySide6~=6.8.0.1
 scikit-learn~=1.5.2
 Click>=6.0
 dlib>=19.3.0
-numpy
 Pillow
 scipy>=0.17.0
 face_recognition

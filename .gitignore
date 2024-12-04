@@ -12,3 +12,12 @@ original_img.png
 /lbp_classifier/model_lbp.p
 /depth_classifier/data_depth.pickle
 /original_dataset/
+/depth_classifier/data_depth0.pickle
+extract_faces.py
+faces_dataset.zip
+faces_dataset/
+hog_classifier/
+lbp_classifier/
+original_dataset.zip
+temp/
+test/test_images.zip
